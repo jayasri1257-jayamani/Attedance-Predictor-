@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Predictor - SRM Institute</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--p:#667eea;--s:#764ba2;--d:#d32f2f;--w:#f57c00;--ok:#388e3c;--i:#1976d2;--b:#e0e0e0;--l:#f5f5f5;--t:#333}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:linear-gradient(135deg,var(--p),var(--s));min-height:100vh;padding:20px}
+.container{max-width:1400px;margin:0 auto}
+header{text-align:center;color:#fff;margin-bottom:28px}
+header h1{font-size:2.6em;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
+.badge-inst{background:rgba(255,255,255,.2);padding:9px 20px;border-radius:20px;display:inline-block;margin-bottom:10px}
+.nav{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap;justify-content:center}
+.nav button{padding:11px 22px;border:2px solid #fff;background:rgba(255,255,255,.2);color:#fff;border-radius:8px;cursor:pointer;font-weight:600}
+.nav button:hover,.nav button.active{background:#fff;color:var(--p)}
+.tab{display:none}.tab.active{display:block}
+.card{background:#fff;border-radius:12px;padding:28px;box-shadow:0 10px 30px rgba(0,0,0,.15);margin-bottom:22px}
+.card h2{color:var(--p);margin-bottom:18px;font-size:1.5em}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.fg{margin-bottom:16px}
+label{display:block;margin-bottom:6px;font-weight:600;color:var(--t)}
+input,select{width:100%;padding:11px;border:2px solid var(--b);border-radius:6px;font-size:1em;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--p)}
+input[readonly]{background:var(--l);color:#555}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btns{display:flex;gap:12px;margin-top:16px}
+button{padding:12px 22px;border:none;border-radius:6px;font-size:1em;font-weight:600;cursor:pointer}
+.bp{background:linear-gradient(135deg,var(--p),var(--s));color:#fff;flex:1}
+.bs{background:var(--l);color:var(--t)}
+.alert{padding:14px 18px;border-radius:8px;margin-bottom:16px;border-left:4px solid;line-height:1.5}
+.alert-danger{background:#ffe5e5;border-color:var(--d);color:#b71c1c}
+.alert-warning{background:#fff3e0;border-color:var(--w);color:#e65100}
+.alert-success{background:#e8f5e9;border-color:var(--ok);color:#1b5e20}
+.alert-info{background:#e3f2fd;border-color:var(--i);color:#0d47a1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:20px}
+.stat{background:var(--l);padding:16px;border-radius:8px;text-align:center;border:1px solid var(--b)}
+.stat b{display:block;font-size:1.8em;color:var(--p)}
+.stat span{font-size:.75em;color:#888;font-weight:600}
+.rbox{padding:18px;border-radius:8px;margin-bottom:14px;border-left:4px solid var(--p);background:#fafafa}
+.rbox h4{margin-bottom:8px}
+.rval{font-size:2em;font-weight:700;color:var(--p)}
+.rsub{font-size:.85em;color:#666;margin:4px 0 10px}
+.bar{background:var(--b);height:12px;border-radius:6px;overflow:hidden}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--p),var(--s));transition:width .4s}
+.info{background:#f9f9f9;padding:16px;border-radius:8px;border:1px solid var(--b);margin-bottom:14px;line-height:1.7;color:#555}
+.chart{position:relative;height:300px}
+.bad{color:var(--d);font-weight:700}.mid{color:var(--w);font-weight:700}.good{color:var(--ok);font-weight:700}
+#chatBtn{position:fixed;bottom:28px;right:28px;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--s));color:#fff;font-size:26px;padding:0;z-index:999}
+#chatWin{position:fixed;bottom:98px;right:28px;width:340px;height:460px;background:#fff;border-radius:12px;box-shadow:0 5px 40px rgba(0,0,0,.25);display:none;flex-direction:column;z-index:999}
+#chatWin.on{display:flex}
+.ch{background:linear-gradient(135deg,var(--p),var(--s));color:#fff;padding:14px;border-radius:12px 12px 0 0;font-weight:600;display:flex;justify-content:space-between}
+.ch button{background:none;color:#fff;padding:0 6px;font-size:20px}
+#msgs{flex:1;overflow-y:auto;padding:14px}
+.m{margin-bottom:10px;padding:9px 12px;border-radius:6px;font-size:.9em;line-height:1.4}
+.m.user{background:var(--l);margin-left:30px;text-align:right}
+.m.bot{background:#e3f2fd;color:var(--i);margin-right:30px}
+.ci{display:flex;gap:8px;padding:12px;border-top:1px solid var(--b)}
+.ci button{padding:9px 14px;background:var(--p);color:#fff}
+@media(max-width:768px){.grid,.row{grid-template-columns:1fr}header h1{font-size:1.9em}#chatWin{width:90%;right:5%}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="badge-inst">🏫 SRM Institute of Science and Technology - Tiruchirappalli</div>
+  <h1>📚 Attendance Predictor </h1>
+  <p>Enter classes conducted and attended - get exact 75% and 90% targets</p>
+</header>
+
+<div class="nav">
+  <button class="active" data-tab="calc">📊 Calculator</button>
+  <button data-tab="analytics">📈 Analytics</button>
+  <button data-tab="sim">📅 Leave Simulator</button>
+  <button data-tab="guide">ℹ️ Guide</button>
+</div>
+
+<!-- CALCULATOR -->
+<div class="tab active" id="tab-calc">
+  <div class="grid">
+    <div class="card">
+      <h2>📋 Your Information</h2>
+      <div class="fg">
+        <label for="section">Section (optional)</label>
+        <select id="section">
+          <option value="">-- Choose your section --</option>
+          <optgroup label="I Year"><option>I ECE-A</option><option>I ECE-B</option><option>I ECE-DS</option><option>I Biotech-B</option></optgroup>
+          <optgroup label="II Year"><option>II BME</option><option>II ECE-DS A</option><option>II ECE-DS B</option></optgroup>
+          <optgroup label="III Year"><option>III ECE-A</option><option>III ECE-B</option><option>III ECE-DS</option><option>III BME</option></optgroup>
+          <optgroup label="IV Year"><option>IV ECE-A</option><option>IV ECE-B</option></optgroup>
+        </select>
+      </div>
+      <div class="row">
+        <div class="fg"><label for="total">Total classes / semester</label><input type="number" id="total" value="45" readonly></div>
+        <div class="fg"><label for="left">Classes remaining</label><input type="number" id="left" readonly placeholder="Total − conducted"></div>
+      </div>
+      <div class="row">
+        <div class="fg"><label for="conducted">Classes conducted so far</label><input type="number" id="conducted" min="1" max="45" step="1" placeholder="e.g., 20" oninput="livePct()"></div>
+        <div class="fg"><label for="attended">Classes attended so far</label><input type="number" id="attended" min="0" step="1" placeholder="e.g., 16" oninput="livePct()"></div>
+      </div>
+      <div class="fg"><label for="pct">Current attendance % (attended ÷ conducted × 100)</label><input type="text" id="pct" readonly placeholder="Calculated automatically"></div>
+      <div class="btns">
+        <button class="bp" onclick="calculate()">🔍 Calculate Now</button>
+        <button class="bs" onclick="resetAll()">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Results</h2>
+      <div id="alerts"></div>
+      <div id="none" style="text-align:center;color:#999;padding:40px 10px">👈 Enter conducted and attended classes, then click Calculate</div>
+      <div id="results" style="display:none">
+        <div class="stats">
+          <div class="stat"><b id="s-rem">--</b><span>CLASSES LEFT</span></div>
+          <div class="stat"><b id="s-cur">--</b><span>CURRENT %</span></div>
+          <div class="stat"><b id="s-max">--</b><span>MAX POSSIBLE %</span></div>
+        </div>
+        <div class="rbox"><h4>⚠️ To stay safe (75%)</h4>
+          <div class="rval" id="res-75">--</div><div class="rsub" id="sub-75"></div>
+          <div class="bar"><div class="fill" id="bar-75"></div></div></div>
+        <div class="rbox"><h4>🎯 To reach excellence (90%)</h4>
+          <div class="rval" id="res-90">--</div><div class="rsub" id="sub-90"></div>
+          <div class="bar"><div class="fill" id="bar-90"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card"><h2>📈 Detailed Analysis</h2><div id="analysis"><p style="color:#999">Results will appear here.</p></div></div>
+  <div class="card"><h2>📊 Attendance Visualization</h2><div class="chart"><canvas id="barChart"></canvas></div></div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="tab" id="tab-analytics">
+  <div class="card">
+    <h2>📈 Attendance Health Dashboard</h2>
+    <div class="stats">
+      <div class="stat"><b id="a-pct">0%</b><span>CURRENT ATTENDANCE</span></div>
+      <div class="stat"><b id="a-att">0</b><span>ATTENDED</span></div>
+      <div class="stat"><b id="a-miss">0</b><span>MISSED SO FAR</span></div>
+      <div class="stat"><b id="a-stat">--</b><span>STATUS</span></div>
+    </div>
+    <div class="chart"><canvas id="pieChart"></canvas></div>
+  </div>
+</div>
+
+<!-- SIMULATOR -->
+<div class="tab" id="tab-sim">
+  <div class="card">
+    <h2>📅 Leave &amp; OD Simulator</h2>
+    <p style="color:#666;margin-bottom:16px">Run the calculator first, then test how future absences change your final attendance.</p>
+    <div class="row">
+      <div class="fg"><label for="sim-miss">Future classes you will miss</label><input type="number" id="sim-miss" min="0" value="0" oninput="simulate()"></div>
+      <div class="fg"><label for="sim-od">Of those, covered by OD / approved (counted present)</label><input type="number" id="sim-od" min="0" value="0" oninput="simulate()"></div>
+    </div>
+    <div class="info" id="sim-out">Run the calculator first.</div>
+  </div>
+</div>
+
+<!-- GUIDE -->
+<div class="tab" id="tab-guide">
+  <div class="card">
+    <h2>ℹ️ How the numbers work</h2>
+    <div class="info"><b>Current attendance %</b> = (classes attended ÷ classes conducted) × 100</div>
+    <div class="info"><b>Classes remaining</b> = total classes (45) − classes conducted</div>
+    <div class="info"><b>Final attendance %</b> = (attended + future classes attended) ÷ 45 × 100, since conducted + remaining = 45.</div>
+    <div class="info"><b>Classes needed for 75%</b> = ⌈0.75 × 45⌉ − attended = 34 − attended<br><b>Classes needed for 90%</b> = ⌈0.90 × 45⌉ − attended = 41 − attended<br>If the number needed is more than the classes remaining, the target is not reachable.</div>
+    <div class="info">
+      <span class="bad">Below 75%</span> - detention risk &nbsp;|&nbsp; <span class="mid">75-90%</span> - safe &nbsp;|&nbsp; <span class="good">90%+</span> - excellent
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- CHATBOT -->
+<button id="chatBtn" onclick="toggleChat()">💬</button>
+<div id="chatWin">
+  <div class="ch"><span>Attendance Advisor 🤖</span><button onclick="toggleChat()">×</button></div>
+  <div id="msgs"></div>
+  <div class="ci"><input type="text" id="chatIn" placeholder="e.g., what if I miss 5 classes?" onkeypress="if(event.key==='Enter')sendChat()"><button onclick="sendChat()">Send</button></div>
+</div>
+
+<script>
+const TOTAL = 45;
+const $ = id => document.getElementById(id);
+const S = { c: 0, a: 0, charts: {} };
+
+const target = p => Math.ceil(TOTAL * p / 100);            // 75 -> 34, 90 -> 41
+const needed = (p, a) => Math.max(0, target(p) - a);        // more classes to attend
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.nav button').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  $('tab-' + b.dataset.tab).classList.add('active');
+  if (b.dataset.tab === 'analytics') renderAnalytics();
+  if (b.dataset.tab === 'sim') simulate();
+});
+
+/* ---------- live fields ---------- */
+function livePct() {
+  const cRaw = $('conducted').value, c = +cRaw, a = +$('attended').value;
+  $('pct').value = (c > 0 && a >= 0 && a <= c && $('attended').value !== '') ? (a / c * 100).toFixed(2) + '%' : '';
+  $('left').value = (cRaw !== '' && c >= 0 && c <= TOTAL) ? TOTAL - c : '';
+}
+
+function msg(text, type) {
+  $('alerts').innerHTML = `<div class="alert alert-${type}">${text}</div>`;
+}
+
+/* ---------- calculator ---------- */
+function calculate() {
+  const c = parseInt($('conducted').value), a = parseInt($('attended').value);
+  if (isNaN(c) || c < 1 || c > TOTAL) return msg(`Classes conducted must be between 1 and ${TOTAL}.`, 'danger');
+  if (isNaN(a) || a < 0 || a > c) return msg('Classes attended must be between 0 and classes conducted.', 'danger');
+
+  S.c = c; S.a = a;
+  const rem = TOTAL - c;
+  const pct = a / c * 100;
+  const maxPct = (a + rem) / TOTAL * 100;
+
+  const goal = p => { const n = needed(p, a); return { n, t: target(p), ok: n <= rem, skip: rem - n }; };
+  const r75 = goal(75), r90 = goal(90);
+
+  if (!r75.ok) {
+    msg(`🚨 <b>IRREVERSIBLE DETENTION ALERT.</b> You need ${r75.n} more classes to reach 75% (${r75.t}/${TOTAL}), but only ${rem} remain. Even with full attendance your best final is ${maxPct.toFixed(1)}%. Please meet your academic advisor immediately.`, 'danger');
+  } else if (r75.n === 0) {
+    msg(`✅ <b>75% secured.</b> You already have ${a} of the ${r75.t} classes needed, so you stay above 75% even if you miss every remaining class.`, r90.n === 0 ? 'success' : 'info');
+  } else {
+    msg(`⚠️ <b>Action needed.</b> Attend at least <b>${r75.n} of the ${rem}</b> remaining classes (${(r75.n / rem * 100).toFixed(1)}%) to finish at 75% or above. You can miss at most ${r75.skip}.`, 'warning');
+  }
+
+  $('none').style.display = 'none';
+  $('results').style.display = 'block';
+  $('s-rem').textContent = rem;
+  $('s-cur').textContent = pct.toFixed(1) + '%';
+  $('s-max').textContent = maxPct.toFixed(1) + '%';
+
+  fill(75, r75, rem, maxPct);
+  fill(90, r90, rem, maxPct);
+
+  const line = (label, r) => r.n === 0
+    ? `<span class="good">✅ ALREADY SECURED</span> - ${a} ≥ ${r.t} classes`
+    : r.ok
+      ? `<span class="good">✅ ACHIEVABLE</span> - attend ${r.n} of ${rem} remaining (${(r.n / rem * 100).toFixed(1)}%), can miss ${r.skip}`
+      : `<span class="bad">❌ NOT REACHABLE</span> - need ${r.n}, only ${rem} remain (short by ${r.n - rem})`;
+
+  $('analysis').innerHTML = `
+    <div class="info">
+      <p><b>Total classes / semester:</b> ${TOTAL}</p>
+      <p><b>Classes conducted:</b> ${c} &nbsp; <b>Attended:</b> ${a} &nbsp; <b>Missed:</b> ${c - a}</p>
+      <p><b>Current attendance:</b> ${a} ÷ ${c} × 100 = ${pct.toFixed(2)}%</p>
+      <p><b>Classes remaining:</b> ${TOTAL} − ${c} = ${rem}</p>
+      <p><b>Best possible final:</b> (${a} + ${rem}) ÷ ${TOTAL} × 100 = ${maxPct.toFixed(2)}%</p>
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--b)">
+      <p><b>75% goal (${r75.t}/${TOTAL}):</b> ${line(75, r75)}</p>
+      <p><b>90% goal (${r90.t}/${TOTAL}):</b> ${line(90, r90)}</p>
+    </div>`;
+
+  drawBar(pct, r75, r90, rem);
+  simulate();
+}
+
+function fill(p, r, rem, maxPct) {
+  $('res-' + p).textContent = r.n === 0 ? '✅ Secured' : r.ok ? r.n + ' classes' : '❌ Not reachable';
+  $('sub-' + p).textContent = r.n === 0
+    ? `Already at ${r.t}/${TOTAL} needed`
+    : r.ok
+      ? `Attend ${r.n} of ${rem} remaining (${(r.n / rem * 100).toFixed(1)}%) · can miss ${r.skip}`
+      : `Short by ${r.n - rem} even with full attendance (max ${maxPct.toFixed(1)}%)`;
+  $('bar-' + p).style.width = (r.n === 0 ? 0 : r.ok ? r.n / rem * 100 : 100) + '%';
+}
+
+function resetAll() {
+  ['conducted', 'attended', 'pct', 'left', 'section'].forEach(id => $(id).value = '');
+  $('results').style.display = 'none';
+  $('none').style.display = 'block';
+  $('alerts').innerHTML = '';
+  $('analysis').innerHTML = '<p style="color:#999">Results will appear here.</p>';
+  S.c = 0; S.a = 0;
+  Object.values(S.charts).forEach(ch => ch && ch.destroy());
+  S.charts = {};
+  simulate();
+}
+
+/* ---------- charts ---------- */
+function drawBar(pct, r75, r90, rem) {
+  if (S.charts.bar) S.charts.bar.destroy();
+  const share = r => rem ? Math.min(100, r.n / rem * 100) : 0;
+  S.charts.bar = new Chart($('barChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Current attendance %', '% of remaining classes for 75%', '% of remaining classes for 90%'],
+      datasets: [{ data: [pct, share(r75), share(r90)], backgroundColor: ['#667eea', '#f57c00', '#388e3c'], borderRadius: 8 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100 } } }
+  });
+}
+
+function renderAnalytics() {
+  if (!S.c) return;
+  const pct = S.a / S.c * 100, rem = TOTAL - S.c;
+  $('a-pct').textContent = pct.toFixed(1) + '%';
+  $('a-att').textContent = S.a;
+  $('a-miss').textContent = S.c - S.a;
+  $('a-stat').textContent = pct < 75 ? 'At Risk' : pct >= 90 ? 'Excellent' : 'On Track';
+  if (S.charts.pie) S.charts.pie.destroy();
+  S.charts.pie = new Chart($('pieChart'), {
+    type: 'doughnut',
+    data: { labels: ['Attended', 'Missed', 'Remaining'], datasets: [{ data: [S.a, S.c - S.a, rem], backgroundColor: ['#667eea', '#d32f2f', '#e0e0e0'], borderColor: '#fff', borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+}
+
+/* ---------- leave simulator ---------- */
+function simulate() {
+  const out = $('sim-out');
+  if (!S.c) { out.textContent = 'Run the calculator first.'; return; }
+  const rem = TOTAL - S.c;
+  const miss = Math.min(Math.max(0, parseInt($('sim-miss').value) || 0), rem);
+  const od = Math.min(Math.max(0, parseInt($('sim-od').value) || 0), miss);
+  const finalAtt = S.a + rem - miss + od;
+  const fp = finalAtt / TOTAL * 100;
+  const cls = fp < 75 ? 'bad' : fp < 90 ? 'mid' : 'good';
+  const verdict = fp < 75 ? '⚠️ Below 75% - detention risk' : fp < 90 ? 'Safe, but below 90%' : '✅ Excellent';
+  out.innerHTML = `
+    <p><b>Classes remaining:</b> ${rem} &nbsp; <b>Missing:</b> ${miss} &nbsp; <b>OD covered:</b> ${od}</p>
+    <p><b>Final attended:</b> ${S.a} + ${rem} − ${miss} + ${od} = ${finalAtt} / ${TOTAL}</p>
+    <p><b>Final attendance:</b> <span class="${cls}">${fp.toFixed(2)}%</span> - ${verdict}</p>`;
+}
+
+/* ---------- chatbot ---------- */
+const chat = [{ r: 'bot', t: 'Hi! 👋 Ask me things like "how many classes for 90%?" or "what if I miss 5 classes?"' }];
+function drawChat() {
+  $('msgs').innerHTML = chat.map(m => `<div class="m ${m.r}">${m.t}</div>`).join('');
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+}
+function toggleChat() { $('chatWin').classList.toggle('on'); drawChat(); }
+function sendChat() {
+  const q = $('chatIn').value.trim();
+  if (!q) return;
+  $('chatIn').value = '';
+  chat.push({ r: 'user', t: q.replace(/</g, '&lt;') });
+  drawChat();
+  setTimeout(() => { chat.push({ r: 'bot', t: reply(q.toLowerCase()) }); drawChat(); }, 500);
+}
+function reply(q) {
+  if (!S.c) return 'Enter your classes conducted and attended, click Calculate, and then I can give you exact numbers.';
+  const rem = TOTAL - S.c, pct = S.a / S.c * 100;
+  const num = (q.match(/\d+/) || [])[0];
+  if (num && /(miss|leave|skip|bunk|absent|sick)/.test(q)) {
+    const m = Math.min(+num, rem), fp = (S.a + rem - m) / TOTAL * 100;
+    return `If you miss ${m} of the ${rem} remaining classes and attend the rest, you finish at ${fp.toFixed(1)}% (${S.a + rem - m}/${TOTAL}). ${fp < 75 ? 'That is below 75%.' : 'That stays above 75%.'}`;
+  }
+  if (q.includes('90')) { const n = needed(90, S.a); return n === 0 ? 'You already have enough classes for 90%.' : n > rem ? `90% needs ${n} more classes but only ${rem} remain, so it is not reachable.` : `For 90% (${target(90)}/${TOTAL}) attend ${n} of the ${rem} remaining classes.`; }
+  if (q.includes('75') || q.includes('safe') || q.includes('status') || q.includes('recover')) { const n = needed(75, S.a); return n === 0 ? 'You are already secure at 75%.' : n > rem ? `75% needs ${n} more classes but only ${rem} remain. Please see your academic advisor.` : `For 75% (${target(75)}/${TOTAL}) attend ${n} of the ${rem} remaining classes; you can miss ${rem - n}.`; }
+  return `You are at ${pct.toFixed(1)}% (${S.a}/${S.c}) with ${rem} classes left. Ask about 75%, 90%, or "what if I miss N classes?"`;
+}
+drawChat();
+</script>
+</body>
+</html>
